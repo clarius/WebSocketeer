@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="/WebSocketeer/assets/css/style.css?v=d85b1706cbf274e187abaa9f5398c5f8386f0049">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>WebSocketeer | High-performance intuitive API for Azure Web PubSub protobuf subprotocol</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="WebSocketeer" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="High-performance intuitive API for Azure Web PubSub protobuf subprotocol" />
+<meta property="og:description" content="High-performance intuitive API for Azure Web PubSub protobuf subprotocol" />
+<meta property="og:site_name" content="WebSocketeer" />
+<script type="application/ld+json">
+{"@type":"WebSite","headline":"WebSocketeer","url":"/WebSocketeer/","description":"High-performance intuitive API for Azure Web PubSub protobuf subprotocol","name":"WebSocketeer","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/devlooped/WebSocketeer">View on GitHub</a>
+
+          <h1 id="project_title">WebSocketeer</h1>
+          <h2 id="project_tagline">High-performance intuitive API for Azure Web PubSub protobuf subprotocol</h2>
+
+          
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1 id="-websocketeer"><img src="https://raw.githubusercontent.com/devlooped/WebSocketeer/main/assets/img/icon.png" alt="Icon" /> WebSocketeer</h1>
+
+<p>A thin, intuitive, idiomatic and high-performance API for 
+Azure Web PubSub <a href="https://docs.microsoft.com/en-us/azure/azure-web-pubsub/reference-protobuf-webpubsub-subprotocol">protobuf subprotocol</a>.</p>
+
+<p><a href="https://www.nuget.org/packages/WebSocketeer"><img src="https://img.shields.io/nuget/v/WebSocketeer.svg?color=royalblue" alt="Version" /></a>
+<a href="https://www.nuget.org/packages/WebSocketeer"><img src="https://img.shields.io/nuget/dt/WebSocketeer.svg?color=green" alt="Downloads" /></a>
+<a href="https://github.com/devlooped/WebSocketeer/blob/main/license.txt"><img src="https://img.shields.io/github/license/devlooped/WebSocketeer.svg?color=blue" alt="License" /></a>
+<a href="https://github.com/devlooped/WebSocketeer/actions"><img src="https://github.com/devlooped/WebSocketeer/workflows/build/badge.svg?branch=main" alt="Build" /></a></p>
+
+<h1 id="what">What</h1>
+
+<p>Azure Web PubSub <a href="https://docs.microsoft.com/en-us/azure/azure-web-pubsub/reference-protobuf-webpubsub-subprotocol">protobuf subprotocol</a> 
+is super awesome and general purpose and I can see endless applications 
+for this new service from Azure. The message-based nature of its “API” is 
+not very intuitive or idiomatic for a dotnet developer though, I think.</p>
+
+<p>I wanted to create a super thin layer on top that didn’t incur unnecessary 
+allocations or buffer handling or extra threads, since that would detract 
+from the amazing work on performance that .NET 6 brings to the table. 
+I use the <a href="https://docs.microsoft.com/en-us/aspnet/core/grpc/performance?view=aspnetcore-5.0#send-binary-payloads">best practices</a> 
+for sending binary payloads using low-level (and quite new!) protobuf 
+APIs for avoiding unnecessary buffer creation/handling.</p>
+
+<p>In order to also squeeze every bit of performance, this project uses the 
+protobuf subprotocol exclusively, even though there is support in the service 
+for <a href="https://docs.microsoft.com/en-us/azure/azure-web-pubsub/reference-json-webpubsub-subprotocol">JSON</a> 
+payloads.</p>
+
+<p>The actual binary payloads you send/receive can of course be decoded into 
+any format you need, including JSON if you just encode/decode it as UTF8 bytes.</p>
+
+<h1 id="usage">Usage</h1>
+
+<p>First acquire a proper client access URI for Azure Web PubSub using the 
+official client API, such as:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">serviceClient</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">WebPubSubServiceClient</span><span class="p">([</span><span class="n">WEB_PUB_SUB_CONNECTION_STRING</span><span class="p">],</span> <span class="p">[</span><span class="n">HUB_NAME</span><span class="p">]);</span>
+<span class="kt">var</span> <span class="n">serviceUri</span> <span class="p">=</span> <span class="n">serviceClient</span><span class="p">.</span><span class="nf">GenerateClientAccessUri</span><span class="p">(</span>
+    <span class="n">userId</span><span class="p">:</span> <span class="n">Guid</span><span class="p">.</span><span class="nf">NewGuid</span><span class="p">().</span><span class="nf">ToString</span><span class="p">(</span><span class="s">"N"</span><span class="p">),</span>
+    <span class="n">roles</span><span class="p">:</span>  <span class="k">new</span><span class="p">[]</span>
+    <span class="p">{</span>
+        <span class="s">"webpubsub.joinLeaveGroup"</span><span class="p">,</span>
+        <span class="s">"webpubsub.sendToGroup"</span>
+    <span class="p">});</span>
+</code></pre></div></div>
+
+<p>Next simply connect the <code class="language-plaintext highlighter-rouge">WebSocketeer</code>:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">await</span> <span class="k">using</span> <span class="nn">IWebSocketeer</span> <span class="n">socketeer</span> <span class="p">=</span> <span class="n">WebSocketeer</span><span class="p">.</span><span class="nf">ConnectAsync</span><span class="p">(</span><span class="n">serviceUri</span><span class="p">);</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>NOTE: the <code class="language-plaintext highlighter-rouge">IWebSocketeer</code> interface implements both <code class="language-plaintext highlighter-rouge">IAsyncDisposable</code>, 
+which allows the <code class="language-plaintext highlighter-rouge">await using</code> pattern above, but also the regular 
+<code class="language-plaintext highlighter-rouge">IDisposable</code> interface. The former will perform a graceful <code class="language-plaintext highlighter-rouge">WebSocket</code> 
+disconnect/close. The latter will simply dispose the underlying <code class="language-plaintext highlighter-rouge">WebSocket</code>.</p>
+</blockquote>
+
+<p>At this point, the <code class="language-plaintext highlighter-rouge">socketeer</code> variable contains a properly connected 
+Web PubSub client, and you can inspect its <code class="language-plaintext highlighter-rouge">ConnectionId</code> and <code class="language-plaintext highlighter-rouge">UserId</code>
+properties, for example.</p>
+
+<p>Next step is perhaps to join some groups:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IWebSocketeerGroup</span> <span class="k">group</span> <span class="p">=</span> <span class="k">await</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">JoinAsync</span><span class="p">(</span><span class="s">"MyGroup"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">IWebSocketeerGroup</code> is an observable of <code class="language-plaintext highlighter-rouge">ReadOnlyMemory&lt;byte&gt;</code>, exposing 
+the incoming messages to that group, and it also provides a 
+<code class="language-plaintext highlighter-rouge">SendAsync(ReadOnlyMemory&lt;byte&gt; message)</code> method to post messages to the group.</p>
+
+<p>To write all incoming messages for the group to the console, you could 
+write:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">var</span> <span class="n">subscription</span> <span class="p">=</span> <span class="k">group</span><span class="p">.</span><span class="nf">Subscribe</span><span class="p">(</span><span class="n">bytes</span> <span class="p">=&gt;</span> 
+    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="n">Encoding</span><span class="p">.</span><span class="n">UTF8</span><span class="p">.</span><span class="nf">GetString</span><span class="p">(</span><span class="n">bytes</span><span class="p">.</span><span class="n">Span</span><span class="p">)));</span>
+</code></pre></div></div>
+
+<p>In order to start processing incoming messages, though, you need to start 
+the socketeer “message loop” first. This would typically be done on a separate thread, 
+using <code class="language-plaintext highlighter-rouge">Task.Run</code>, for example:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">started</span> <span class="p">=</span> <span class="n">Task</span><span class="p">.</span><span class="nf">Run</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">RunAsync</span><span class="p">());</span>
+</code></pre></div></div>
+
+<p>The returned task from <code class="language-plaintext highlighter-rouge">RunAsync</code> will remain in progress until the socketeer is disposed, 
+or the underlying <code class="language-plaintext highlighter-rouge">WebSocket</code> is closed (either by the client or the server), or when an 
+optional cancellation token passed to it is cancelled.</p>
+
+<p>You can also send messages to a group you haven’t joined (provided the roles 
+specified when opening the connection allow it) via the <code class="language-plaintext highlighter-rouge">IWebSocketeer.SendAsync</code> 
+method too:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">await</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">SendAsync</span><span class="p">(</span><span class="s">"YourGroup"</span><span class="p">,</span> <span class="n">Encoding</span><span class="p">.</span><span class="n">UTF8</span><span class="p">.</span><span class="nf">GetBytes</span><span class="p">(</span><span class="s">"Hello World"</span><span class="p">));</span>
+</code></pre></div></div>
+
+<h2 id="advanced-scenarios">Advanced Scenarios</h2>
+
+<h3 id="accessing-joined-group">Accessing Joined Group</h3>
+
+<p>Sometimes, it’s useful to perform group join up-front, but at some 
+later time you might also need to get the previously joined group 
+from the same <code class="language-plaintext highlighter-rouge">IWebSocketeer</code> instance.</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IWebSocketeer</span> <span class="n">socketeer</span> <span class="p">=</span> <span class="cm">/* connect, join some groups, etc. */</span><span class="p">;</span>
+
+<span class="c1">// If group hasn't been joined previously, no incoming messages would arrive in this case.</span>
+<span class="n">IWebSocketeerGroup</span> <span class="k">group</span> <span class="p">=</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">Joined</span><span class="p">(</span><span class="s">"incoming"</span><span class="p">);</span>
+<span class="k">group</span><span class="p">.</span><span class="nf">Subscribe</span><span class="p">(</span><span class="n">x</span> <span class="p">=&gt;</span> <span class="cm">/* process incoming */</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="handling-the-websocket">Handling the WebSocket</h3>
+
+<p>You can alternatively handle the <code class="language-plaintext highlighter-rouge">WebSocket</code> yourself. Instead of passing the 
+service <code class="language-plaintext highlighter-rouge">Uri</code> to <code class="language-plaintext highlighter-rouge">ConnectAsync</code>, you can create and connect a <code class="language-plaintext highlighter-rouge">WebSocket</code> manually 
+and pass it to the <code class="language-plaintext highlighter-rouge">WebSocketeer.ConnectAsync(WebSocket, CancellationToken)</code> overload.</p>
+
+<p>In this case, it’s important to remember to add the <code class="language-plaintext highlighter-rouge">protobuf.webpubsub.azure.v1</code> 
+required subprotocol:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">Devlooped.Net</span><span class="p">;</span>
+
+<span class="kt">var</span> <span class="n">client</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">ClientWebSocket</span><span class="p">();</span>
+<span class="n">client</span><span class="p">.</span><span class="n">Options</span><span class="p">.</span><span class="nf">AddSubProtocol</span><span class="p">(</span><span class="s">"protobuf.webpubsub.azure.v1"</span><span class="p">);</span>
+
+<span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="nf">ConnectAsync</span><span class="p">(</span><span class="n">serverUri</span><span class="p">,</span> <span class="n">CancellationToken</span><span class="p">.</span><span class="n">None</span><span class="p">);</span>
+
+<span class="k">await</span> <span class="k">using</span> <span class="nn">var</span> <span class="n">socketeer</span> <span class="p">=</span> <span class="n">WebSocketeer</span><span class="p">.</span><span class="nf">ConnectAsync</span><span class="p">(</span><span class="n">client</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="split-requestresponse-groups">Split Request/Response Groups</h3>
+
+<p>You may want to simulate request/response communication patterns over the 
+socketeer. In cases like this, you would typically do the following:</p>
+
+<ul>
+  <li>Server joined to a client-specific group, such as <code class="language-plaintext highlighter-rouge">SERVER_ID-CLIENT_ID</code> 
+(with a <code class="language-plaintext highlighter-rouge">[TO]-[FROM]</code> format, so, TO=server, FROM=client)</li>
+  <li>Server replying to requests in that group by sending responses to 
+<code class="language-plaintext highlighter-rouge">CLIENT_ID-SERVER_ID</code> (TO=client, FROM=server);</li>
+  <li>Client joined to the responses group <code class="language-plaintext highlighter-rouge">CLIENT_ID-SERVER_ID</code> and sending 
+requests as needed to <code class="language-plaintext highlighter-rouge">SERVER_ID-CLIENT_ID</code>.</li>
+</ul>
+
+<p>Note that the client <em>must not</em> join the <code class="language-plaintext highlighter-rouge">SERVER_ID-CLIENT_ID</code> group because 
+otherwise it would <em>also</em> receive its own messages that are intended for the 
+server only. Likewise, the server cannot join the <code class="language-plaintext highlighter-rouge">CLIENT_ID-SERVER_ID</code> group 
+either. This is why this pattern might be more common than it would otherwise
+seem.</p>
+
+<p>Server-side:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IWebSocketeer</span> <span class="n">socketeer</span> <span class="p">=</span> <span class="p">...;</span>
+<span class="kt">var</span> <span class="n">serverId</span> <span class="p">=</span> <span class="n">socketeer</span><span class="p">.</span><span class="n">UserId</span><span class="p">;</span>
+
+<span class="c1">// Perhaps from an initial exchange over a shared channel</span>
+<span class="kt">var</span> <span class="n">clientId</span> <span class="p">=</span> <span class="p">...;</span>
+
+<span class="k">await</span> <span class="k">using</span> <span class="nn">IWebSocketeerGroup</span> <span class="n">clientChannel</span> <span class="p">=</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">Split</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">JoinAsync</span><span class="p">(</span><span class="s">$"</span><span class="p">{</span><span class="n">serverId</span><span class="p">}</span><span class="s">-</span><span class="p">{</span><span class="n">clientId</span><span class="p">}</span><span class="s">"</span><span class="p">),</span> 
+    <span class="s">$"</span><span class="p">{</span><span class="n">clientId</span><span class="p">}</span><span class="s">-</span><span class="p">{</span><span class="n">serverId</span><span class="p">}</span><span class="s">"</span><span class="p">);</span>
+
+<span class="n">clientChannel</span><span class="p">.</span><span class="nf">Subscribe</span><span class="p">(</span><span class="k">async</span> <span class="n">x</span> <span class="p">=&gt;</span> 
+<span class="p">{</span>
+    <span class="c1">// do some processing on incoming requests.</span>
+    <span class="p">...</span>
+    <span class="c1">// send a response via the outgoing group</span>
+    <span class="k">await</span> <span class="n">clientChannel</span><span class="p">.</span><span class="nf">SendAsync</span><span class="p">(</span><span class="n">response</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>Client-side:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IWebSocketeer</span> <span class="n">socketeer</span> <span class="p">=</span> <span class="p">...;</span>
+<span class="kt">var</span> <span class="n">clientId</span> <span class="p">=</span> <span class="n">socketeer</span><span class="p">.</span><span class="n">UserId</span><span class="p">;</span>
+
+<span class="c1">// Perhaps a known identifier, or looked up somehow</span>
+<span class="kt">var</span> <span class="n">serverId</span> <span class="p">=</span> <span class="p">...;</span>
+
+<span class="k">await</span> <span class="k">using</span> <span class="nn">IWebSocketeerGroup</span> <span class="n">serverChannel</span> <span class="p">=</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">Split</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">socketeer</span><span class="p">.</span><span class="nf">JoinAsync</span><span class="p">(</span><span class="s">$"</span><span class="p">{</span><span class="n">clientId</span><span class="p">}</span><span class="s">-</span><span class="p">{</span><span class="n">serverId</span><span class="p">}</span><span class="s">""),
+</span>    <span class="s">$"</span><span class="p">{</span><span class="n">serverId</span><span class="p">}</span><span class="s">-</span><span class="p">{</span><span class="n">clientId</span><span class="p">}</span><span class="s">"</span><span class="p">);</span>
+
+<span class="n">serverChannel</span><span class="p">.</span><span class="nf">Subscribe</span><span class="p">(</span><span class="k">async</span> <span class="n">x</span> <span class="p">=&gt;</span> <span class="cm">/* process responses */</span><span class="p">);</span>
+<span class="k">await</span> <span class="n">serverChannel</span><span class="p">.</span><span class="nf">SendAsync</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+</code></pre></div></div>
+
+<!-- include docs/footer.md -->
+<h1 id="sponsors">Sponsors</h1>
+
+<!-- sponsors.md -->
+<p><a href="https://github.com/KirillOsenkov"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/KirillOsenkov.png" alt="Kirill Osenkov" title="Kirill Osenkov" /></a>
+<a href="https://github.com/augustoproiete"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/augustoproiete.png" alt="C. Augusto Proiete" title="C. Augusto Proiete" /></a>
+<a href="https://github.com/sandrock"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/sandrock.png" alt="SandRock" title="SandRock" /></a>
+<a href="https://github.com/aws"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/aws.png" alt="Amazon Web Services" title="Amazon Web Services" /></a>
+<a href="https://github.com/MelbourneDeveloper"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/MelbourneDeveloper.png" alt="Christian Findlay" title="Christian Findlay" /></a>
+<a href="https://github.com/clarius"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/clarius.png" alt="Clarius Org" title="Clarius Org" /></a>
+<a href="https://github.com/MFB-Technologies-Inc"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/MFB-Technologies-Inc.png" alt="MFB Technologies, Inc." title="MFB Technologies, Inc." /></a></p>
+
+<!-- sponsors.md -->
+
+<p><a href="https://github.com/sponsors/devlooped"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/sponsor.png" alt="Sponsor this project" title="Sponsor this project" /></a>
+ </p>
+
+<p><a href="https://github.com/sponsors">Learn more about GitHub Sponsors</a></p>
+
+<!-- docs/footer.md -->
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        
+        <p class="copyright">WebSocketeer maintained by <a href="https://github.com/devlooped">devlooped</a></p>
+        
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
